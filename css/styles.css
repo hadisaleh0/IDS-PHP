@@ -79,18 +79,24 @@ body {
   backdrop-filter: blur(8px);
   border-top: 2px solid var(--primary-color);
   box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  justify-content: space-between;
 }
 
 .logo {
   display: flex;
   align-items: center;
-
   height: 40px;
 }
 
 .logo img {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
+  margin-top: 10px;
   object-fit: contain;
   transition: transform 0.3s ease;
 }
@@ -110,10 +116,10 @@ body {
 }
 
 .search-box {
-  flex-grow: 1;
-  max-width: 700px;
-  position: relative;
   margin: 0 16px;
+  max-width: 500px;
+  flex: 1;
+  position: relative;
 }
 
 .search-box input {
@@ -140,9 +146,24 @@ body {
   color: #838c95;
 }
 
+.nav-buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Update button order for logged-in state */
+.nav-buttons .signup-btn {
+  order: 1; /* This will keep signup button in the middle */
+}
+
+.nav-buttons .logout-btn {
+  order: 2; /* This will keep logout button on the right */
+}
+
 .nav-buttons button {
-  padding: 8px 100px;
-  margin-left: 4px;
+  padding: 8px 16px;
   border: 2px solid;
   border-radius: 3px;
   cursor: pointer;
@@ -150,6 +171,7 @@ body {
   overflow: hidden;
   z-index: 1;
   backdrop-filter: blur(4px);
+  font-size: 0.9rem;
 }
 
 .nav-buttons button::before {
@@ -207,12 +229,17 @@ body {
   display: flex;
   max-width: 1264px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 70px 16px 16px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Sidebar Styles */
 .sidebar {
   width: 164px;
+  position: sticky;
+  top: 70px;
+  height: calc(100vh - 70px);
   padding-right: 16px;
 }
 
@@ -253,6 +280,7 @@ body {
   flex-grow: 1;
   max-width: 800px;
   padding: 0 24px;
+  margin-top: 20px;
 }
 
 .content-header {
@@ -260,6 +288,18 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  padding-top: 16px;
+}
+
+.content-header h1 {
+  margin: 0;
+  color: var(--dark-text);
+  font-size: 1.8rem;
+}
+
+/* Add margin only when button exists */
+.content-header .ask-question-btn {
+  margin-left: 16px;
 }
 
 .ask-question-btn {
@@ -290,6 +330,7 @@ body {
   box-shadow: 0 0 15px rgba(255, 0, 255, 0.1);
   transition: transform 0.2s ease;
   border: 1px solid var(--border-color);
+  cursor: pointer;
 }
 
 .question-item:hover {
@@ -323,7 +364,9 @@ body {
 }
 
 .question-summary {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
+  padding-right: 10px;
 }
 
 .question-summary h3 {
@@ -342,8 +385,15 @@ body {
 }
 
 .question-excerpt {
-  margin-bottom: 8px;
-  color: #3b4045;
+  color: var(--text-secondary);
+  margin: 10px 0;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  max-height: 3em;
 }
 
 .tags {
@@ -581,61 +631,49 @@ h5 {
 
 /* Login Page Styles */
 .login-container {
-  min-height: calc(100vh - 50px);
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 80px 15px 15px;
+  position: relative;
+  z-index: 1;
 }
 
 .login-box {
   background: rgba(10, 10, 10, 0.8);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
   padding: 40px;
-  border-radius: 20px;
+  border-radius: 12px;
   width: 100%;
-  max-width: 480px;
+  max-width: 400px;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
   border: 1px solid var(--border-color);
-  box-shadow: 0 0 30px rgba(255, 0, 255, 0.2);
-  animation: fadeIn 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
 }
 
 .login-box h2 {
-  text-align: center;
-  margin-bottom: 10px;
   color: var(--dark-text);
-}
-
-.login-subtitle {
   text-align: center;
-  color: var(--text-secondary);
   margin-bottom: 30px;
+  font-size: 1.8rem;
+  font-weight: 600;
 }
 
-.login-form .form-group {
+.form-group {
   position: relative;
   margin-bottom: 20px;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--dark-text);
-}
-
-.form-group label i {
-  margin-right: 8px;
-  color: var(--primary-color);
-}
-
 .form-group input {
   width: 100%;
-  padding: 12px 15px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 2px solid var(--border-color);
+  padding: 12px 40px 12px 15px;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   color: var(--dark-text);
-  font-size: 16px;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
 }
 
@@ -645,100 +683,72 @@ h5 {
   outline: none;
 }
 
-.toggle-password {
+.form-group i {
   position: absolute;
   right: 15px;
-  top: 42px;
-  background: none;
-  border: none;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.toggle-password:hover {
-  color: var(--primary-color);
 }
 
 .form-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin: 15px 0;
 }
 
 .remember-me {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--text-secondary);
-}
-
-.remember-me input[type="checkbox"] {
-  accent-color: var(--primary-color);
+  font-size: 0.9rem;
 }
 
 .forgot-password {
-  color: var(--secondary-color);
+  color: var(--primary-color);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 0.9rem;
   transition: all 0.3s ease;
 }
 
 .forgot-password:hover {
-  color: var(--primary-color);
   text-shadow: 0 0 10px var(--primary-color);
 }
 
 .login-submit {
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(45deg, var(--primary-color), var(--hover-color));
-  border: none;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
   border-radius: 8px;
-  color: var(--dark-text);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  transition: all 0.3s ease;
+  margin-top: 20px;
 }
 
 .login-submit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+  background: var(--primary-color);
+  color: var(--dark-bg);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
 }
 
 .social-login {
-  margin-top: 30px;
   text-align: center;
+  margin-top: 30px;
 }
 
 .social-login p {
   color: var(--text-secondary);
   margin-bottom: 15px;
-  position: relative;
-}
-
-.social-login p::before,
-.social-login p::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 30%;
-  height: 1px;
-  background: var(--border-color);
-}
-
-.social-login p::before {
-  left: 0;
-}
-
-.social-login p::after {
-  right: 0;
+  font-size: 0.9rem;
 }
 
 .social-buttons {
@@ -748,60 +758,36 @@ h5 {
 }
 
 .social-btn {
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 2px solid var(--border-color);
+  border: 1px solid var(--border-color);
   background: transparent;
   color: var(--dark-text);
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.social-btn:hover {
-  transform: translateY(-2px);
-}
-
-.social-btn.google:hover {
-  border-color: #db4437;
-  color: #db4437;
-  box-shadow: 0 0 15px rgba(219, 68, 55, 0.3);
-}
-
-.social-btn.github:hover {
-  border-color: #fff;
-  color: #fff;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
-
-.social-btn.facebook:hover {
-  border-color: #4267b2;
-  color: #4267b2;
-  box-shadow: 0 0 15px rgba(66, 103, 178, 0.3);
-}
-
-.signup-link {
+/* Error message styling */
+.error-message {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 12px;
+  border-radius: 8px;
   text-align: center;
-  margin-top: 20px;
-  color: var(--text-secondary);
-}
-
-.signup-link a {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.signup-link a:hover {
-  text-shadow: 0 0 10px var(--primary-color);
+  margin-bottom: 20px;
+  font-size: 0.9rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
   .login-box {
-    padding: 20px;
+    padding: 30px 20px;
   }
 
   .social-buttons {
@@ -809,8 +795,544 @@ h5 {
   }
 
   .social-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
   }
+}
+
+/* Add these styles to your existing CSS */
+.error-message {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid var(--danger-color);
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  color: var(--dark-text);
+  margin: 20px 0;
+}
+
+.question-excerpt {
+  color: var(--text-secondary);
+  margin: 10px 0;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+/* Prevent link click from triggering the div click */
+.question-item a {
+  position: relative;
+  z-index: 2;
+}
+
+/* Post page styles */
+.post-container {
+  background: rgba(10, 10, 10, 0.8);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+  position: relative;
+}
+
+.post-title {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  color: var(--dark-text);
+}
+
+.post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.post-body {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  position: absolute;
+  left: 24px;
+  top: 120px;
+}
+
+.post-content {
+  color: var(--dark-text);
+  line-height: 1.8;
+  margin: 0px 0 24px 45px;
+  font-size: 1.1rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.post-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.post-stats {
+  display: flex;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+/* Additional form styles */
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--dark-text);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.form-group label i {
+  color: var(--primary-color);
+}
+
+.login-subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  color: var(--dark-text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+  outline: none;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.remember-me a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.remember-me a:hover {
+  text-decoration: underline;
+}
+
+/* Adjust login box for signup */
+#signup .login-box {
+  max-width: 450px;
+  margin-top: 20px;
+}
+
+#signup .form-group {
+  margin-bottom: 16px;
+}
+
+/* Make sure the container is tall enough */
+.login-container {
+  min-height: calc(100vh - 60px);
+  padding-top: 60px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .login-container {
+    padding-top: 60px;
+  }
+
+  #signup .login-box {
+    margin-top: 10px;
+  }
+}
+
+/* Post specific styles */
+.post-header {
+  margin-bottom: 24px;
+}
+
+.vote-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 40px;
+  position: relative;
+}
+
+.vote-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px;
+}
+
+.vote-btn:hover {
+  color: var(--primary-color);
+}
+
+.vote-count {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--dark-text);
+  text-align: center;
+}
+
+.post-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.post-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.post-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.post-actions form {
+  margin: 0;
+}
+
+.delete-btn,
+.share-btn {
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.delete-btn {
+  border: 1px solid var(--danger-color);
+  color: var(--danger-color);
+}
+
+.delete-btn:hover {
+  background: var(--danger-color);
+  color: var(--dark-bg);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+}
+
+.share-btn {
+  background: transparent;
+  border: 1px solid var(--secondary-color);
+  color: var(--secondary-color);
+}
+
+.share-btn:hover {
+  background: var(--secondary-color);
+  color: var(--dark-bg);
+}
+
+.comments-section {
+  margin-top: 32px;
+  padding: 24px;
+  background: rgba(10, 10, 10, 0.8);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.comment-form {
+  margin-top: 16px;
+}
+
+.comment-form textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--dark-text);
+  margin-bottom: 12px;
+  resize: vertical;
+}
+
+.comment-form button {
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.comment-form button:hover {
+  background: var(--primary-color);
+  color: var(--dark-bg);
+}
+
+.user-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.user-link:hover {
+  text-shadow: 0 0 10px var(--primary-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-top: 60px;
+  }
+
+  .content {
+    margin-top: 10px;
+  }
+}
+
+/* Add styles for user welcome and logout */
+.user-welcome {
+  color: var(--dark-text);
+  margin-right: 8px;
+  font-size: 0.9rem;
+}
+
+.logout-btn {
+  background: transparent;
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: var(--danger-color);
+  color: var(--dark-bg);
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .nav-buttons {
+    gap: 4px; /* Reduce gap on smaller screens */
+  }
+
+  .nav-buttons button {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .user-welcome {
+    display: none;
+  }
+
+  .search-box {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-buttons button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .search-box {
+    max-width: 150px;
+  }
+}
+
+/* Ask Question Page Styles */
+.ask-question-container {
+  background: rgba(10, 10, 10, 0.8);
+  border-radius: 8px;
+  padding: 24px;
+  margin-top: 20px;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.question-form {
+  margin-top: 20px;
+}
+
+.question-form .form-group {
+  margin-bottom: 20px;
+}
+
+.question-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--dark-text);
+  font-weight: 500;
+}
+
+.question-form input[type="text"],
+.question-form textarea,
+.question-form select {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--dark-text);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.question-form input[type="text"]:focus,
+.question-form textarea:focus,
+.question-form select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.2);
+  outline: none;
+}
+
+.question-form textarea {
+  resize: vertical;
+  min-height: 200px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.submit-question {
+  background: var(--primary-color);
+  color: var(--dark-bg);
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.submit-question:hover {
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+/* Comments styles */
+.comments-section {
+  margin-top: 32px;
+}
+
+.comment {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.comment-content {
+  color: var(--dark-text);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.comment-author {
+  color: var(--primary-color);
+}
+
+.login-prompt {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 20px 0;
+}
+
+.login-prompt a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.login-prompt a:hover {
+  text-decoration: underline;
+}
+
+.delete-btn {
+  background: transparent;
+  border: 1px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: var(--danger-color);
+  color: var(--dark-bg);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
 }

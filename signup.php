@@ -28,21 +28,22 @@
     </header>
 
     <!-- Signup Form -->
-    <div class="login-container">
+    <div class="login-container" id="signup">
       <div class="login-box">
         <h2>Create Account</h2>
         <p class="login-subtitle">Join our community today</p>
 
-        <form class="login-form">
+        <form class="login-form" method="post" action="register.php">
           <div class="form-group">
-            <label for="name">
+            <label for="username">
               <i class="fas fa-user"></i>
-              Full Name
+              Username
             </label>
             <input
               type="text"
-              id="name"
-              placeholder="Enter your full name"
+              id="username"
+              name="username"
+              placeholder="Choose a username"
               required
             />
           </div>
@@ -55,6 +56,7 @@
             <input
               type="email"
               id="email"
+              name="email"
               placeholder="Enter your email"
               required
             />
@@ -68,44 +70,35 @@
             <input
               type="password"
               id="password"
+              name="password"
               placeholder="Create a password"
               required
             />
-            <button type="button" class="toggle-password">
-              <i class="fas fa-eye"></i>
-            </button>
           </div>
 
           <div class="form-group">
-            <label for="confirm-password">
+            <label for="confirm_password">
               <i class="fas fa-lock"></i>
               Confirm Password
             </label>
             <input
               type="password"
-              id="confirm-password"
+              id="confirm_password"
+              name="confirm_password"
               placeholder="Confirm your password"
               required
             />
-            <button type="button" class="toggle-password">
-              <i class="fas fa-eye"></i>
-            </button>
           </div>
 
           <div class="form-options">
             <label class="remember-me">
               <input type="checkbox" required />
-              <span
-                >I agree to the <a href="#">Terms</a> and
-                <a href="#">Privacy Policy</a></span
-              >
+              <span>I agree to the <a href="#">Terms of Service</a></span>
             </label>
           </div>
 
-          <button type="submit" class="login-submit">
-            Sign Up
-            <i class="fas fa-arrow-right"></i>
-          </button>
+          <input type="submit" class="login-submit" value="SignUp" name="signUp">
+          </input>
         </form>
 
         <div class="social-login">
@@ -125,7 +118,7 @@
 
         <p class="signup-link">
           Already have an account?
-          <a href="login.html">Log in</a>
+          <a href="login.php">Log in</a>
         </p>
       </div>
     </div>

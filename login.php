@@ -28,12 +28,12 @@
     </header>
 
     <!-- Login Form -->
-    <div class="login-container">
+    <div class="login-container" id="login">
       <div class="login-box">
         <h2>Welcome Back</h2>
         <p class="login-subtitle">Enter your credentials to continue</p>
 
-        <form class="login-form">
+        <form class="login-form" method="post" action="register.php">
           <div class="form-group">
             <label for="email">
               <i class="fas fa-envelope"></i>
@@ -42,6 +42,7 @@
             <input
               type="email"
               id="email"
+              name="email"
               placeholder="Enter your email"
               required
             />
@@ -55,12 +56,10 @@
             <input
               type="password"
               id="password"
+              name="password"
               placeholder="Enter your password"
               required
             />
-            <button type="button" class="toggle-password">
-              <i class="fas fa-eye"></i>
-            </button>
           </div>
 
           <div class="form-options">
@@ -71,10 +70,8 @@
             <a href="#" class="forgot-password">Forgot password?</a>
           </div>
 
-          <button type="submit" class="login-submit">
-            Log in
-            <i class="fas fa-arrow-right"></i>
-          </button>
+          <input type="submit" class="login-submit" value="Login" name="login">
+          </input>
         </form>
 
         <div class="social-login">

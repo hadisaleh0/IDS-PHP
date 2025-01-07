@@ -7,7 +7,7 @@ header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Include required files
-require '../dbconc.php'; // Include your database connection
+require '../config/dbcon.php'; // Include your database connection
 include_once '../objects/comment.php'; // Include the Comment object
 
 // Initialize objects

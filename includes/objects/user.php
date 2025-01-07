@@ -13,8 +13,13 @@ class User{
     public $role;
     public $reputation_points;
 
-    public function __construct($db){
+    public function __construct($db) {
+        if (!$db) {
+            error_log("Database connection is null in User constructor");
+            throw new Exception("Database connection failed");
+        }
         $this->conn = $db;
+        error_log("Database connection established in User constructor");
     }
 
     public function create(){
@@ -56,7 +61,6 @@ class User{
     }
 
 
-
     // Read all users 
 public function readAll() {
     $query = <<<SQL
@@ -85,7 +89,6 @@ public function readAll() {
 }
 
 
-
 // Delete user
     public function delete() {
         try {
@@ -110,55 +113,6 @@ public function readAll() {
     }
 
 
-  // Check if email exists
-public function emailExists() {
-    $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE email = :email";
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(':email', $this->email);
-    $stmt->execute();
-    
-    // Fetch the count directly
-    $count = $stmt->fetchColumn();
-    return $count > 0;
-}
-
-
-    // Check if username exists
-public function usernameExists() {
-    $query = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE username = :username";
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(':username', $this->username);
-    $stmt->execute();
-
-    // Fetch the count directly
-    $count = $stmt->fetchColumn();
-    return $count > 0;
-}
-
-
-
-
-// Verify password
-    public function verifyPassword($password) {
-        try {
-            $query = "SELECT password FROM " . $this->table_name . " 
-                     WHERE user_id = ? LIMIT 1";
-            
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $this->user_id);
-            $stmt->execute();
-            
-            if($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                return password_verify($password, $row['password']);
-            }
-            return false;
-        } catch(Exception $e) {
-            error_log("Password verification error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-
     // Update password
     public function updatePassword($new_password) {
         try {
@@ -178,59 +132,6 @@ public function usernameExists() {
             return false;
         }
     }
-
-
-    // Login user
-    public function login($email, $password) {
-        try {
-            $query = "SELECT 
-                        user_id,
-                        username,
-                        password,
-                        role,
-                        reputation_points
-                    FROM " . $this->table_name . "
-                    WHERE email = ?
-                    LIMIT 1";
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $email);
-            $stmt->execute();
-
-            if($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                if(password_verify($password, $row['password'])) {
-                    return [
-                        'user_id' => $row['user_id'],
-                        'username' => $row['username'],
-                        'role' => $row['role'],
-                        'reputation_points' => $row['reputation_points']
-                    ];
-                }
-            }
-            return false;
-        } catch(Exception $e) {
-            error_log("Login error: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // Logout function
-public function logout() {
-    // Start the session if not already started
-    if (session_status() == PHP_SESSION_NONE) {
-        session_start();
-    }
-
-    // Unset all session variables
-    $_SESSION = [];
-
-    // Destroy the session
-    session_destroy();
-
-    // Redirect to login page or home page
-    header("Location: /login.php");
-    exit();
-}
 
 
 

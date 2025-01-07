@@ -26,128 +26,101 @@ class Post{
     public function __construct($db) {
         $this->conn = $db;
     }
-
+    
     // Create post
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . "
-                SET
-                    user_id = :user_id,
-                    category_id =:category_id,
-                    title = :title,
-                    content = :content";
+        $query = "INSERT INTO " . $this->table_name . " 
+                (user_id, category_id, title, description) 
+                VALUES (?, ?, ?, ?)";
 
-        $stmt = $this->conn->prepare($query);
+        try {
+            $stmt = mysqli_prepare($this->conn, $query);
+            
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . mysqli_error($this->conn));
+            }
 
-        // Sanitize input
-        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-        $this->category_id = htmlspecialchars(strip_tags($this->category_id));
-        $this->title = htmlspecialchars(strip_tags($this->title));
-        $this->description = htmlspecialchars(strip_tags($this->description));
-
-        // Bind values
-        $stmt->bindParam(":user_id", $this->user_id);
-        $stmt->bindParam(":category_id", $this->category_id);
-        $stmt->bindParam(":title", $this->title);
-        $stmt->bindParam(":description", $this->description);
-
-        if($stmt->execute()) {
-            return true;
+            // Sanitize input
+            $this->title = htmlspecialchars(strip_tags($this->title));
+            $this->description = htmlspecialchars(strip_tags($this->description));
+            
+            // Bind parameters
+            mysqli_stmt_bind_param($stmt, "iiss", 
+                $this->user_id,
+                $this->category_id,
+                $this->title,
+                $this->description
+            );
+            
+            // Execute the statement
+            if (mysqli_stmt_execute($stmt)) {
+                mysqli_stmt_close($stmt);
+                return true;
+            }
+            
+            mysqli_stmt_close($stmt);
+            throw new Exception("Execute failed: " . mysqli_stmt_error($stmt));
+            
+        } catch(Exception $e) {
+            error_log("Post creation error: " . $e->getMessage());
+            throw $e;
         }
-        return false;
     }
 
 
-    // Read single post
-// Read single post
-public function readOne($current_user_id = null) {
+
+ public static function readOne($id) {
+    global $conn;
+    
     $query = "SELECT 
-                p.*, 
-                u.username as author_name, 
-                c.category_name, 
-                (SELECT COUNT(*) FROM Comments WHERE post_id = p.post_id) as comment_count, 
-                (SELECT COUNT(*) FROM PostVotes WHERE post_id = p.post_id AND vote_type = 1) as upvotes, 
-                (SELECT COUNT(*) FROM PostVotes WHERE post_id = p.post_id AND vote_type = -1) as downvotes";
-    
-    if ($current_user_id) {
-        $query .= ", (SELECT vote_type FROM PostVotes WHERE post_id = p.post_id AND user_id = :current_user_id) as user_vote";
-    }
-    
-    $query .= " FROM " . $this->table_name . " p
-            LEFT JOIN Users u ON p.user_id = u.user_id
-            LEFT JOIN Categories c ON p.category_id = c.category_id
-            WHERE p.post_id = :post_id
-            LIMIT 0,1";
+        p.id,
+        p.title,
+        p.description,
+        p.created_at,
+        p.upvotes,
+        p.downvotes,
+        p.category_id,
+        u.username,
+        c.name as category_name,
+        GROUP_CONCAT(DISTINCT t.name) as tags
+    FROM posts p
+    LEFT JOIN users u ON p.user_id = u.id
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN post_tags pt ON p.id = pt.post_id
+    LEFT JOIN tags t ON pt.tag_id = t.id
+    WHERE p.id = ?
+    GROUP BY p.id, c.name";
 
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindParam(":post_id", $this->post_id);
-    if ($current_user_id) {
-        $stmt->bindParam(":current_user_id", $current_user_id);
-    }
-    $stmt->execute();
-
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row) {
-        $this->post_id = $row['post_id'];
-        $this->user_id = $row['user_id'];
-        $this->title = $row['title'];
-        $this->description = $row['content'];
-        $this->created_at = $row['created_at'];
-        $this->updated_at = $row['updated_at'];
-        $this->author_name = $row['author_name'];
-        $this->category_name = $row['category_name']; // Fetch category name
-        $this->comment_count = $row['comment_count'];
-        $this->upvotes = (int)$row['upvotes'];
-        $this->downvotes = (int)$row['downvotes'];
-        $this->user_vote = isset($row['user_vote']) ? (int)$row['user_vote'] : 0;
-        return true;
-    }
-    return false;
-}
-
-
-public function readAllPostsByCategory($page = 1, $per_page = 10, $current_user_id = null, $sort_by = 'created_at', $sort_order = 'DESC') {
     try {
-        // Calculate offset
-        $offset = ($page - 1) * $per_page;
-
-        // Validate sort parameters
-        $allowed_sort_fields = ['created_at', 'title', 'updated_at'];
-        $allowed_sort_orders = ['ASC', 'DESC'];
+        $stmt = mysqli_prepare($conn, $query);
         
-        $sort_by = in_array($sort_by, $allowed_sort_fields) ? $sort_by : 'created_at';
-        $sort_order = in_array(strtoupper($sort_order), $allowed_sort_orders) ? strtoupper($sort_order) : 'DESC';
-
-        // Base query
-        $query = "SELECT 
-                    c.category_name, 
-                    p.*, 
-                    u.username as author_name,
-                    (SELECT COUNT(*) FROM Comments WHERE post_id = p.post_id) as comment_count";
-
-
-        $query .= " FROM " . $this->table_name . " p
-                LEFT JOIN Users u ON p.user_id = u.user_id
-                LEFT JOIN Categories c ON p.category_id = c.category_id
-                ORDER BY c.category_name, p.{$sort_by} {$sort_order}
-                LIMIT :offset, :per_page";
-
-        $stmt = $this->conn->prepare($query);
-
-        // Bind values
-        if ($current_user_id) {
-            $stmt->bindParam(":current_user_id", $current_user_id);
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . mysqli_error($conn));
         }
-        $stmt->bindParam(":offset", $offset, PDO::PARAM_INT);
-        $stmt->bindParam(":per_page", $per_page, PDO::PARAM_INT);
 
-        $stmt->execute();
-        return $stmt;
+        mysqli_stmt_bind_param($stmt, "i", $id);
+        
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception("Failed to execute statement: " . mysqli_stmt_error($stmt));
+        }
+
+        $result = mysqli_stmt_get_result($stmt);
+        
+        if ($result && $row = mysqli_fetch_assoc($result)) {
+            mysqli_stmt_close($stmt);
+            return $row;
+        }
+
+        mysqli_stmt_close($stmt);
+        return null;
+
     } catch (Exception $e) {
-        error_log("Error in readAllByCategory: " . $e->getMessage());
-        throw new Exception("Failed to retrieve posts by category.");
+        if (isset($stmt)) {
+            mysqli_stmt_close($stmt);
+        }
+        throw new Exception("Error reading post: " . $e->getMessage());
     }
 }
-
 
 // Update post
 public function update() {
@@ -186,15 +159,13 @@ public function update() {
 // Delete post
     public function delete() {
         $query = "DELETE FROM " . $this->table_name . " 
-                WHERE post_id = :post_id AND 
-                (user_id = :user_id OR :is_admin = TRUE)";
+                WHERE id = ? AND 
+                (user_id = ? OR ? = TRUE)";
 
         $stmt = $this->conn->prepare($query);
 
         // Bind values
-        $stmt->bindParam(":post_id", $this->post_id);
-        $stmt->bindParam(":user_id", $this->user_id);
-        $stmt->bindParam(":is_admin", $this->is_admin, PDO::PARAM_BOOL);
+        $stmt->bind_param("iii", $this->post_id, $this->user_id, $this->is_admin);
 
         if($stmt->execute()) {
             return true;
@@ -258,19 +229,19 @@ public function update() {
     }
 
 
-    // Verify post owner
-    public function verifyOwner() {
-        $query = "SELECT 1 FROM " . $this->table_name . " 
-                WHERE post_id = ? AND user_id = ?
-                LIMIT 0,1";
+    // // Verify comment owner
+    // public function verifyOwner() {
+    //     $query = "SELECT 1 FROM " . $this->table_name . " 
+    //             WHERE id = ? AND user_id = ?
+    //             LIMIT 0,1";
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $this->post_id);
-        $stmt->bindParam(2, $this->user_id);
-        $stmt->execute();
-
-        return $stmt->rowCount() > 0;
-    }
+    //     $stmt = $this->conn->prepare($query);
+    //     $stmt->bind_param("ii", $this->post_id, $this->user_id);
+    //     $stmt->execute();
+    //     $result = $stmt->get_result();
+        
+    //     return $result->num_rows > 0;
+    // }
 
 
 
@@ -373,6 +344,31 @@ public function getAllUsersVotedOnPost() {
         }
     }
 
-
+// Verify post owner
+public static function verifyOwner($post_id, $user_id) {
+    global $conn;
+    
+    try {
+        $query = "SELECT 1 FROM posts WHERE id = ? AND user_id = ?";
+        $stmt = mysqli_prepare($conn, $query);
+        
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement");
+        }
+        
+        mysqli_stmt_bind_param($stmt, "ii", $post_id, $user_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        
+        $isOwner = mysqli_fetch_row($result) ? true : false;
+        
+        mysqli_stmt_close($stmt);
+        return $isOwner;
+        
+    } catch (Exception $e) {
+        error_log("Error verifying owner: " . $e->getMessage());
+        return false;
+    }
+}
 
 }

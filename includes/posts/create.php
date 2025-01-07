@@ -24,7 +24,7 @@
 
 
 <?php
-require'../dbconc.php';
+require'../config/dbcon.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Retrieve form data
