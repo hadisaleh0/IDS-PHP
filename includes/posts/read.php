@@ -32,3 +32,12 @@ if($requestMethod == "GET"){
     header("HTTP/1.0 405 Method Not Allowed");
     echo json_encode($data);
 }
+
+// Add this to your post query
+$query = "SELECT p.*, 
+          (SELECT vote_type FROM postvotes WHERE post_id = p.id AND user_id = ?) as user_vote
+          FROM posts p 
+          WHERE p.id = ?";
+
+// Bind the user_id parameter if user is logged in
+$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;

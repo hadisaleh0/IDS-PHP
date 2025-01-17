@@ -21,10 +21,12 @@ class Post{
     public $upvotes;
     public $downvotes;
     public $is_admin = false;
+    private $votes_count;
 
     // Constructor
     public function __construct($db) {
         $this->conn = $db;
+        $this->votes_count = 0;
     }
     
     // Create post
@@ -248,100 +250,75 @@ public function update() {
 
     // Vote on a post
     public function vote($user_id, $vote_type) {
-        try {
-            $this->conn->beginTransaction();
-
-            // Check if user has already voted
-            $check_query = "SELECT vote_type FROM PostVotes 
-                        WHERE post_id = ? AND user_id = ?
-                        LIMIT 0,1";
-            
-            $check_stmt = $this->conn->prepare($check_query);
-            $check_stmt->bindParam(1, $this->post_id);
-            $check_stmt->bindParam(2, $user_id);
-            $check_stmt->execute();
-
-            if($check_stmt->rowCount() > 0) {
-                $row = $check_stmt->fetch(PDO::FETCH_ASSOC);
-                if($row['vote_type'] == $vote_type) {
-                    // Remove vote if same type (toggle)
-                    $query = "DELETE FROM PostVotes 
-                            WHERE post_id = ? AND user_id = ?";
-                    $stmt = $this->conn->prepare($query);
-                    $stmt->bindParam(1, $this->post_id);
-                    $stmt->bindParam(2, $user_id);
-                } else {
-                    // Update vote type
-                    $query = "UPDATE PostVotes 
-                            SET vote_type = :vote_type 
-                            WHERE post_id = :post_id AND user_id = :user_id";
-                    $stmt = $this->conn->prepare($query);
-                    $stmt->bindParam(":vote_type", $vote_type);
-                    $stmt->bindParam(":post_id", $this->post_id);
-                    $stmt->bindParam(":user_id", $user_id);
-                }
-            } else {
-                // Create new vote
-                $query = "INSERT INTO PostVotes 
-                        SET post_id = :post_id,
-                            user_id = :user_id,
-                            vote_type = :vote_type";
-                $stmt = $this->conn->prepare($query);
-                $stmt->bindParam(":post_id", $this->post_id);
-                $stmt->bindParam(":user_id", $user_id);
-                $stmt->bindParam(":vote_type", $vote_type);
-            }
-
-            $stmt->execute();
-            $this->conn->commit();
-            return true;
-        } catch(Exception $e) {
-            $this->conn->rollBack();
-            error_log("Error in vote: " . $e->getMessage());
-            throw new Exception("Failed to process vote.");
+        if (!is_numeric($user_id) || !in_array($vote_type, [1, -1])) {
+            return false;
         }
-    }
 
-// Get all users who voted on a post
-public function getAllUsersVotedOnPost() {
-    try {
-        $query = "SELECT user_id, vote_type 
-                FROM PostVotes 
-                WHERE post_id = ?";
+        $query = "INSERT INTO postvotes (post_id, user_id, vote_type, created_at) 
+                  VALUES (:post_id, :user_id, :vote_type, NOW())
+                  ON DUPLICATE KEY UPDATE vote_type = :vote_type";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $this->post_id);
-        $stmt->execute();
+        
+        $stmt->bindParam(":post_id", $this->post_id);
+        $stmt->bindParam(":user_id", $user_id);
+        $stmt->bindParam(":vote_type", $vote_type);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch(Exception $e) {
-        error_log("Error getting all votes on post: " . $e->getMessage());
-        throw new Exception("Failed to retrieve votes.");
+        return $stmt->execute();
     }
-}
 
-// Get vote counts for a post
-    public function getVoteCounts() {
-        try {
-            $query = "SELECT 
-                        SUM(CASE WHEN vote_type = 1 THEN 1 ELSE 0 END) as upvotes,
-                        SUM(CASE WHEN vote_type = -1 THEN 1 ELSE 0 END) as downvotes
-                    FROM PostVotes 
-                    WHERE post_id = ?";
+    public function removeVote($user_id) {
+        $query = "DELETE FROM postvotes WHERE post_id = :post_id AND user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        
+        $stmt->bindParam(":post_id", $this->post_id);
+        $stmt->bindParam(":user_id", $user_id);
 
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $this->post_id);
-            $stmt->execute();
+        return $stmt->execute();
+    }
 
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            return array(
-                'upvotes' => (int)($row['upvotes'] ?? 0),
-                'downvotes' => (int)($row['downvotes'] ?? 0)
-            );
-        } catch(Exception $e) {
-            error_log("Error getting vote counts: " . $e->getMessage());
-            throw new Exception("Failed to get vote counts.");
-        }
+    public function getVotesCount() {
+        $query = "SELECT 
+                    SUM(CASE WHEN vote_type = 1 THEN 1 ELSE 0 END) as upvotes,
+                    SUM(CASE WHEN vote_type = -1 THEN 1 ELSE 0 END) as downvotes
+                  FROM postvotes 
+                  WHERE post_id = :post_id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":post_id", $this->post_id);
+        $stmt->execute();
+        
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return [
+            'upvotes' => (int)($row['upvotes'] ?? 0),
+            'downvotes' => (int)($row['downvotes'] ?? 0),
+            'total' => (int)($row['upvotes'] ?? 0) - (int)($row['downvotes'] ?? 0)
+        ];
+    }
+
+    public function getUserVote($user_id) {
+        $query = "SELECT vote_type FROM postvotes WHERE post_id = :post_id AND user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        
+        $stmt->bindParam(":post_id", $this->post_id);
+        $stmt->bindParam(":user_id", $user_id);
+        
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int)$row['vote_type'] : 0;
+    }
+
+    public function getVoters() {
+        $query = "SELECT u.id, u.username, pv.vote_type, pv.created_at 
+                 FROM postvotes pv 
+                 JOIN users u ON pv.user_id = u.id 
+                 WHERE pv.post_id = :post_id";
+                  
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":post_id", $this->post_id);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
 // Verify post owner

@@ -9,25 +9,17 @@ function getPosts() {
         throw new Exception("Database connection failed");
     }
 
-    // Simpler query first to test
     $query = "SELECT 
-        p.id,
-        p.title,
-        p.description,
-        p.created_at,
-        p.upvotes,
-        p.downvotes,
-        p.category_id,
-        u.username,
-        c.name as category_name,
-        GROUP_CONCAT(DISTINCT t.name) as tags
-    FROM posts p
-    LEFT JOIN users u ON p.user_id = u.id
-    LEFT JOIN categories c ON p.category_id = c.id
-    LEFT JOIN post_tags pt ON p.id = pt.post_id
-    LEFT JOIN tags t ON pt.tag_id = t.id
-    GROUP BY p.id, c.name
-    ORDER BY p.created_at DESC";
+                p.*,
+                u.username as author_name,
+                c.name as category_name,
+                (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comments_count,
+                (SELECT COUNT(CASE WHEN vote_type = 1 THEN 1 END) FROM postvotes WHERE post_id = p.id) as upvotes,
+                (SELECT COUNT(CASE WHEN vote_type = -1 THEN 1 END) FROM postvotes WHERE post_id = p.id) as downvotes
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            LEFT JOIN categories c ON p.category_id = c.id
+            ORDER BY p.created_at DESC";
 
     try {
         $result = mysqli_query($conn, $query);
@@ -38,9 +30,11 @@ function getPosts() {
 
         $posts = array();
         while($row = mysqli_fetch_assoc($result)) {
+            // Calculate total votes
+            $row['total_votes'] = ($row['upvotes'] ?? 0) - ($row['downvotes'] ?? 0);
             $posts[] = $row;
         }
-        
+
         if (empty($posts)) {
             return json_encode([
                 'status' => 404,
@@ -49,7 +43,7 @@ function getPosts() {
         }
         
         return json_encode($posts);
-        
+
     } catch (Exception $e) {
         return json_encode([
             'status' => 500,

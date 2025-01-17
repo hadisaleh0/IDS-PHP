@@ -1,8 +1,3 @@
-
-
-
-
-
 <?php
 // Include the database connection
 require'../dbconc.php';

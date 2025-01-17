@@ -28,7 +28,7 @@ $post->post_id = $data->post_id;
 $post->user_id = $data->user_id;
 
 // Verify ownership before deletion
-if (!$post->verifyOwner()) {
+if (!$post->verifyOwner($post->post_id, $post->user_id)) {
     http_response_code(403); // Forbidden
     echo json_encode(array("message" => "You do not have permission to delete this post."));
     exit;

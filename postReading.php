@@ -13,15 +13,29 @@ if (!$post_id) {
 }
 
 try {
-    // Get full post details
-    $post = Post::readOne($post_id);
+    // Prepare the query with vote information
+    $query = "SELECT p.*, u.username, c.name as category_name,
+              (SELECT COUNT(*) FROM postvotes WHERE post_id = p.id AND vote_type = 1) as upvotes,
+              (SELECT COUNT(*) FROM postvotes WHERE post_id = p.id AND vote_type = -1) as downvotes,
+              (SELECT vote_type FROM postvotes WHERE post_id = p.id AND user_id = ?) as user_vote
+              FROM posts p
+              LEFT JOIN users u ON p.user_id = u.id
+              LEFT JOIN categories c ON p.category_id = c.id
+              WHERE p.id = ?";
+              
+    $stmt = mysqli_prepare($conn, $query);
+    $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+    mysqli_stmt_bind_param($stmt, "ii", $user_id, $post_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $post = mysqli_fetch_assoc($result);
     
     if (!$post) {
         throw new Exception("Post not found");
     }
 
-    // Check if current user is post owner using verifyOwner method
-    $isOwner = isset($_SESSION['user_id']) && Post::verifyOwner($post_id, $_SESSION['user_id']);
+    // Check if current user is post owner
+    $isOwner = isset($_SESSION['user_id']) && $post['user_id'] == $_SESSION['user_id'];
 
     // Handle comment submission
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment'])) {
@@ -42,13 +56,15 @@ try {
     }
 
     // Handle post deletion
-    if (isset($_POST['delete_post']) && $isOwner) {
-        $delete_query = "DELETE FROM posts WHERE id = ? AND user_id = ?";
-        $stmt = mysqli_prepare($conn, $delete_query);
-        mysqli_stmt_bind_param($stmt, "ii", $post_id, $_SESSION['user_id']);
-        if (mysqli_stmt_execute($stmt)) {
-            header('Location: index.php?success=Post deleted');
-            exit();
+    if (isset($_POST['delete_post']) && isset($_SESSION['user_id'])) {
+        if ($isOwner || (isset($_SESSION['is_admin']) && $_SESSION['is_admin'])) {
+            $delete_query = "DELETE FROM posts WHERE id = ?";
+            $stmt = mysqli_prepare($conn, $delete_query);
+            mysqli_stmt_bind_param($stmt, "i", $post_id);
+            if (mysqli_stmt_execute($stmt)) {
+                header('Location: index.php?success=Post deleted');
+                exit();
+            }
         }
     }
 
@@ -78,6 +94,31 @@ try {
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .post-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .category-tag {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 0, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--primary-color);
+            font-size: 0.9em;
+        }
+
+        .category-tag i {
+            margin-right: 5px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
     <div id="particles-js"></div>
@@ -127,18 +168,16 @@ try {
                 <li>
                     <a href="index.php"><i class="fas fa-home"></i> Home</a>
                 </li>
-                <li class="active">
-                    <a href="#"><i class="fas fa-globe"></i> Questions</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-tag"></i> Tags</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-user"></i> Users</a>
-                </li>
-                <li>
-                    <a href="#"><i class="fas fa-trophy"></i> Badges</a>
-                </li>
+                <?php if(isset($_SESSION['role']) && $_SESSION['role'] === 'Admin'): ?>
+              <li>
+                  <a href="users.php"><i class="fas fa-user"></i> Users</a>
+              </li>
+              <?php endif; ?>
+              <?php if(isset($_SESSION['user_id'])): ?>
+              <li>
+                  <a href="profile.php"><i class="fas fa-user"></i> Profile</a>
+              </li>
+          <?php endif; ?>
             </ul>
         </div>
 
@@ -152,13 +191,43 @@ try {
                         Asked <?php echo getTimeAgo($post['created_at']); ?>
                         by <a href="#"><?php echo htmlspecialchars($post['username'] ?? 'Anonymous'); ?></a>
                     </div>
+                    <div class="category-tag">
+                        <i class="fas fa-folder"></i>
+                        <?php echo htmlspecialchars($post['category_name'] ?? 'Uncategorized'); ?>
+                    </div>
                 </div>
 
                 <div class="post-body">
-                    <div class="vote-controls">
-                        <button class="vote-btn up"><i class="fas fa-caret-up"></i></button>
-                        <span class="vote-count"><?php echo ($post['upvotes'] ?? 0) - ($post['downvotes'] ?? 0); ?></span>
-                        <button class="vote-btn down"><i class="fas fa-caret-down"></i></button>
+                    <div class="voting-section">
+                        <?php if(isset($_SESSION['user_id'])): ?>
+                            <div class="vote-buttons">
+                                <button class="vote-btn upvote <?php echo (int)$post['user_vote'] === 1 ? 'active' : ''; ?>" 
+                                        data-post-id="<?php echo htmlspecialchars($post['id']); ?>" 
+                                        data-vote-type="1">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                <span class="votes-count <?php echo ((int)$post['upvotes'] - (int)$post['downvotes']) >= 0 ? 'positive' : 'negative'; ?>">
+                                    <?php echo ((int)$post['upvotes'] - (int)$post['downvotes']); ?>
+                                </span>
+                                <button class="vote-btn downvote <?php echo (int)$post['user_vote'] === -1 ? 'active' : ''; ?>" 
+                                        data-post-id="<?php echo htmlspecialchars($post['id']); ?>" 
+                                        data-vote-type="-1">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                            </div>
+                        <?php else: ?>
+                            <div class="vote-buttons disabled">
+                                <button class="vote-btn" onclick="window.location.href='login.php'" title="Login to vote">
+                                    <i class="fas fa-thumbs-up"></i>
+                                </button>
+                                <span class="votes-count <?php echo ((int)$post['upvotes'] - (int)$post['downvotes']) >= 0 ? 'positive' : 'negative'; ?>">
+                                    <?php echo ((int)$post['upvotes'] - (int)$post['downvotes']); ?>
+                                </span>
+                                <button class="vote-btn" onclick="window.location.href='login.php'" title="Login to vote">
+                                    <i class="fas fa-thumbs-down"></i>
+                                </button>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -179,7 +248,7 @@ try {
                     </div>
                     
                     <div class="post-actions">
-                        <?php if ($isOwner): ?>
+                        <?php if(isset($_SESSION['user_id']) && ($isOwner || (isset($_SESSION['is_admin']) && $_SESSION['is_admin']))): ?>
                             <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this post?');">
                                 <button type="submit" name="delete_post" class="delete-btn">
                                     <i class="fas fa-trash"></i> Delete
@@ -223,6 +292,14 @@ try {
                                 <span class="comment-date">
                                     <?php echo getTimeAgo($comment['created_at']); ?>
                                 </span>
+                                <?php if(isset($_SESSION['user_id']) && ($comment['user_id'] == $_SESSION['user_id'] || (isset($_SESSION['is_admin']) && $_SESSION['is_admin']))): ?>
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                                        <input type="hidden" name="comment_id" value="<?php echo $comment['id']; ?>">
+                                        <button type="submit" name="delete_comment" class="delete-btn">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endwhile; ?>
@@ -235,5 +312,84 @@ try {
     <script>
         particlesJS.load("particles-js", "particles-config.json");
     </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const voteButtons = document.querySelectorAll('.vote-btn:not(.disabled)');
+        
+        voteButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const postId = this.dataset.postId;
+                const voteType = parseInt(this.dataset.voteType);
+                const isActive = this.classList.contains('active');
+                
+                // If already voted the same way, remove vote
+                const finalVoteType = isActive ? 0 : voteType;
+                
+                fetch('includes/posts/vote.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        post_id: postId,
+                        vote_type: finalVoteType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        // Update vote count
+                        const votesCount = this.parentElement.querySelector('.votes-count');
+                        votesCount.textContent = data.votes.total;
+                        
+                        // Update button states
+                        const upvoteBtn = this.parentElement.querySelector('.upvote');
+                        const downvoteBtn = this.parentElement.querySelector('.downvote');
+                        
+                        upvoteBtn.classList.remove('active');
+                        downvoteBtn.classList.remove('active');
+                        
+                        if (finalVoteType === 1) {
+                            upvoteBtn.classList.add('active');
+                        } else if (finalVoteType === -1) {
+                            downvoteBtn.classList.add('active');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    });
+    </script>
+
+    <?php
+    if (isset($_POST['delete_comment']) && isset($_SESSION['user_id'])) {
+        $comment_id = $_POST['comment_id'];
+        
+        // First check if user is admin or comment owner
+        $check_query = "SELECT user_id FROM comments WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $check_query);
+        mysqli_stmt_bind_param($stmt, "i", $comment_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $comment = mysqli_fetch_assoc($result);
+        
+        if ($comment && ($comment['user_id'] == $_SESSION['user_id'] || (isset($_SESSION['is_admin']) && $_SESSION['is_admin']))) {
+            $delete_query = "DELETE FROM comments WHERE id = ?";
+            $stmt = mysqli_prepare($conn, $delete_query);
+            mysqli_stmt_bind_param($stmt, "i", $comment_id);
+            if (mysqli_stmt_execute($stmt)) {
+                header("Location: postReading.php?id=" . $post_id . "&success=Comment deleted");
+                exit();
+            }
+        }
+    }
+    ?>
 </body>
 </html>
